@@ -1,15 +1,19 @@
 import { useState } from "react";
+import React, { useMemo } from 'react';
+import MaterialReactTable from 'material-react-table';
+
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 
 function App() {
-  const [parquetContent, setParquetContent] = useState("");
+  const [parquetContent, setParquetContent] = useState([]);
+  const [parquetColumns, setParquetColumns] = useState([]); 
   const [fileName, setFilename] = useState("");
 
   async function readParquetFile() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setParquetContent(await invoke("read_parquet", { fileName: fileName }));
+    setParquetColumns(JSON.parse(await invoke("read_parquet_schema", { fileName: fileName })));
+    setParquetContent(JSON.parse(await invoke("read_parquet", { fileName: fileName })));
   }
 
   return (
@@ -33,7 +37,7 @@ function App() {
           <button type="submit">Load</button>
         </form>
       </div>
-      <p>{parquetContent}</p>
+      <MaterialReactTable columns={parquetColumns} data={parquetContent} />
     </div>
   );
 }
