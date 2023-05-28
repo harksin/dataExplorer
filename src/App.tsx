@@ -8,14 +8,24 @@ import { open } from "@tauri-apps/api/dialog";
 
 import "./App.css";
 
+type DataExplorerDataFrame = {
+  columns: any;
+  data: any;
+}
+
 function App() {
-  const [parquetContent, setParquetContent] = useState([]);
-  const [parquetColumns, setParquetColumns] = useState([]);
+  const [dataframe, setDataframe] = useState<DataExplorerDataFrame>({ columns: [], data: [] });
   const [fileName, setFilename] = useState("");
+  const [sqlQuery, setSqlQuery] = useState("");
 
   async function readParquetFile() {
-    setParquetColumns(JSON.parse(await invoke("read_parquet_schema", { fileName: fileName })));
-    setParquetContent(JSON.parse(await invoke("read_parquet", { fileName: fileName })));
+    let de_df: DataExplorerDataFrame = JSON.parse(await invoke("read_parquet", { fileName: fileName }))
+    setDataframe(de_df)
+  }
+
+  async function queryParquetFile() {
+    let de_df: DataExplorerDataFrame = JSON.parse(await invoke("query_parquet", { fileName: fileName, query: sqlQuery }))
+    setDataframe(de_df)
   }
 
 
@@ -48,9 +58,7 @@ function App() {
   async function cleanData() {
 
     setFilename("");
-    setParquetColumns([]);
-    setParquetContent([]);
-
+    setDataframe({ columns: [], data: [] });
   }
 
   return (
@@ -62,7 +70,28 @@ function App() {
         <button onClick={openFile} >Open Parquet File</button>
         <button onClick={cleanData} >Clean</button>
       </div>
-      {fileName != "" && <MaterialReactTable columns={parquetColumns} data={parquetContent} />}
+      {fileName != "" &&
+        <div>
+          <div className="row">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                queryParquetFile();
+              }}
+            >
+              <p> Enter your SQL query bellow </p>
+              <p> The table name is "data", here is an example query : SELECT * FROM data WHERE my_value == 100  </p>
+
+              <input
+                id="sql-input"
+                onChange={(e) => setSqlQuery(e.currentTarget.value)}
+                placeholder="Enter an sql query..."
+              />
+              <button type="submit">Run</button>
+            </form>
+          </div>
+          <MaterialReactTable columns={dataframe?.columns} data={dataframe?.data} />
+        </div>}
     </div>
   );
 }

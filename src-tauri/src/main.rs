@@ -5,6 +5,8 @@ use datafusion::error::Result;
 use datafusion::prelude::*;
 use log::info;
 use serde::{Deserialize, Serialize};
+use serde_json::Map;
+use serde_json::Value;
 
 #[tauri::command]
 async fn read_parquet(file_name: String) -> String {
@@ -13,28 +15,49 @@ async fn read_parquet(file_name: String) -> String {
     let ctx = SessionContext::new();
 
     // register parquet file with the execution context
-    ctx.register_parquet("test_table", &file_name, ParquetReadOptions::default())
+    let df = ctx
+        .read_parquet(&file_name, ParquetReadOptions::default())
+        .await
+        .unwrap();
+
+    DataExplorerDataframe {
+        columns: get_df_schema(&df),
+        data: get_df_data(&df).await,
+    }
+    .into()
+}
+
+#[tauri::command]
+async fn query_parquet(file_name: String, query: String) -> String {
+    info!("Reading parquet file: {}", file_name);
+
+    let ctx = SessionContext::new();
+
+    // register parquet file with the execution context
+    ctx.register_parquet("data", &file_name, ParquetReadOptions::default())
         .await
         .unwrap();
 
     // execute the query
-    let df = ctx
-        .sql(
-            "SELECT * \
-        FROM test_table",
-        )
-        .await
-        .unwrap();
+    let df = ctx.sql(query.as_str()).await.unwrap();
 
-    // print the results
-    let batches = df.collect().await.unwrap();
+    DataExplorerDataframe {
+        columns: get_df_schema(&df),
+        data: get_df_data(&df).await,
+    }
+    .into()
+}
 
-    let json_data =
-        datafusion::arrow::json::writer::record_batches_to_json_rows(&batches[..]).unwrap();
+#[derive(Debug, Serialize, Deserialize)]
+struct DataExplorerDataframe {
+    columns: Vec<MuiTableColumns>,
+    data: Vec<Map<String, Value>>,
+}
 
-    let serialised_json_data = serde_json::to_string(&json_data).unwrap();
-
-    serialised_json_data
+impl From<DataExplorerDataframe> for String {
+    fn from(df: DataExplorerDataframe) -> Self {
+        serde_json::to_string(&df).unwrap()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,19 +75,7 @@ impl From<&String> for MuiTableColumns {
     }
 }
 
-#[tauri::command]
-async fn read_parquet_schema(file_name: String) -> String {
-    info!("Reading parquet file: {}", file_name);
-
-    let ctx = SessionContext::new();
-
-    // register parquet file with the execution context
-    let df = ctx
-        .read_parquet(&file_name, ParquetReadOptions::default())
-        .await
-        .unwrap();
-
-    // execute the query
+fn get_df_schema(df: &DataFrame) -> Vec<MuiTableColumns> {
     let schema = df
         .schema()
         .fields()
@@ -72,9 +83,16 @@ async fn read_parquet_schema(file_name: String) -> String {
         .map(|f| MuiTableColumns::from(f.name()))
         .collect::<Vec<_>>();
 
-    let serialised_schema = serde_json::to_string(&schema).unwrap();
+    schema
+}
 
-    serialised_schema
+async fn get_df_data(df: &DataFrame) -> Vec<Map<String, Value>> {
+    let batches = df.clone().collect().await.unwrap();
+
+    let json_data =
+        datafusion::arrow::json::writer::record_batches_to_json_rows(&batches[..]).unwrap();
+
+    json_data
 }
 
 fn main() {
@@ -83,7 +101,7 @@ fn main() {
     info!("Starting DataExplorer");
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_parquet, read_parquet_schema])
+        .invoke_handler(tauri::generate_handler![read_parquet, query_parquet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
