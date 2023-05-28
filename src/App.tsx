@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import React, { useMemo } from 'react';
 import MaterialReactTable from 'material-react-table';
 
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/dialog";
+
 import "./App.css";
 
 function App() {
   const [parquetContent, setParquetContent] = useState([]);
-  const [parquetColumns, setParquetColumns] = useState([]); 
+  const [parquetColumns, setParquetColumns] = useState([]);
   const [fileName, setFilename] = useState("");
 
   async function readParquetFile() {
@@ -16,28 +18,51 @@ function App() {
     setParquetContent(JSON.parse(await invoke("read_parquet", { fileName: fileName })));
   }
 
+
+  useEffect(() => {
+    if (fileName !== "") { readParquetFile() };
+  }, [fileName])
+
+
+  async function openFile() {
+    let properties = {
+      defaultPath: 'C:\\',
+      directory: false,
+      multiple: false,
+      filters: [{
+        extensions: ['parquet'], name: "*"
+      }]
+    };
+    const selected = await open(properties);
+
+    if (Array.isArray(selected)) {
+      console.log(`User selected ${selected.length} files, which is not yet allowed`);
+    } else if (selected === null) {
+      console.log('User cancelled the dialog');
+    } else {
+      setFilename(selected);
+    }
+
+  }
+
+  async function cleanData() {
+
+    setFilename("");
+    setParquetColumns([]);
+    setParquetContent([]);
+
+  }
+
   return (
     <div className="container">
       <h1>Welcome dataExplorer!</h1>
 
-      <p>put here the parquet file path you want to read.</p>
-
-      <div className="row">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            readParquetFile();
-          }}
-        >
-          <input
-            id="greet-input"
-            onChange={(e) => setFilename(e.currentTarget.value)}
-            placeholder="Enter a name..."
-          />
-          <button type="submit">Load</button>
-        </form>
+      <p>Start </p>
+      <div className="row" >
+        <button onClick={openFile} >Open Parquet File</button>
+        <button onClick={cleanData} >Clean</button>
       </div>
-      <MaterialReactTable columns={parquetColumns} data={parquetContent} />
+      {fileName != "" && <MaterialReactTable columns={parquetColumns} data={parquetContent} />}
     </div>
   );
 }
