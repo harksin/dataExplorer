@@ -1,12 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::collections::HashMap;
+use std::hash::Hash;
+
 use datafusion::error::Result;
 use datafusion::prelude::*;
 use log::info;
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use serde_json::Value;
+use tauri::async_runtime::RwLock;
 
 #[tauri::command]
 async fn read_parquet(file_name: String) -> String {
@@ -46,6 +50,36 @@ async fn query_parquet(file_name: String, query: String) -> String {
         data: get_df_data(&df).await,
     }
     .into()
+}
+
+#[derive(Debug,Serialize ,Default)]
+pub struct S3Bucket {
+    pub endpoint: String,
+    pub bucket: String,
+    pub access_key: String,
+    pub secret_key: String,
+}
+
+#[tauri::command]
+async fn save_s3_empoint_definition(
+    endpoint: String,
+    bucket: String,
+    access_key: String,
+    secret_key: String,
+    state: tauri::State<'_,DataExplorerState>
+) -> Result<String,()> {
+
+    let s3_bucket = S3Bucket {
+        endpoint: endpoint.clone(),
+        bucket: bucket.clone(),
+        access_key: access_key.clone(),
+        secret_key: secret_key.clone(),
+    };
+
+    state.s3_endpoints.write().await.insert(endpoint.clone(), s3_bucket);
+
+
+    Ok("endpoint saved".to_string())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -95,13 +129,15 @@ async fn get_df_data(df: &DataFrame) -> Vec<Map<String, Value>> {
     json_data
 }
 
+#[derive(Debug,Default)]
+struct DataExplorerState {
+    s3_endpoints: RwLock<HashMap<String, S3Bucket>>,
+}
+
 fn main() {
-    env_logger::init();
-
-    info!("Starting DataExplorer");
-
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_parquet, query_parquet])
+  tauri::Builder::default()
+         .manage(DataExplorerState::default())
+        .invoke_handler(tauri::generate_handler![read_parquet, query_parquet,save_s3_empoint_definition])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
