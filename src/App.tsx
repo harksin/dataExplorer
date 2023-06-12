@@ -26,10 +26,11 @@ import { useNavigate } from 'react-router-dom';
 
 
 import "./App.css";
-import LocalExplorer from "./local/explore_local_files";
+import LocalExplorer from "./local/local_explorer";
 import ErrorBoundary from "./errors/default_boundary";
 import { Box, CssBaseline, Divider, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from "@mui/material";
 import Layout from "./Layout";
+import S3Explorer from "./s3/s3_explorer";
 
 
 
@@ -41,7 +42,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="local" element={<LocalExplorer />} />
-        <Route path="s3-endpoints" element={<S3Endpoints/>} />
+        <Route path="s3-endpoints" element={<S3Explorer/>} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NoMatch />} />
       </Route>
@@ -57,14 +58,6 @@ function Home() {
   return (
     <div>
       <h2>Home</h2>
-    </div>
-  );
-}
-
-function S3Endpoints() {
-  return (
-    <div>
-      <h2>Not yet implemented</h2>
     </div>
   );
 }

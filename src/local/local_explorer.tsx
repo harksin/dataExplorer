@@ -7,6 +7,7 @@ import { open } from "@tauri-apps/api/dialog";
 
 import "../App.css";
 
+//todo generate from rust structs
 type DataExplorerDataFrame = {
   columns: any;
   data: any;

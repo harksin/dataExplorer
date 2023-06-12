@@ -52,7 +52,7 @@ async fn query_parquet(file_name: String, query: String) -> String {
     .into()
 }
 
-#[derive(Debug,Serialize ,Default)]
+#[derive(Debug, Serialize, Default)]
 pub struct S3Bucket {
     pub endpoint: String,
     pub bucket: String,
@@ -61,14 +61,13 @@ pub struct S3Bucket {
 }
 
 #[tauri::command]
-async fn save_s3_empoint_definition(
+async fn save_s3_endpoint(
     endpoint: String,
     bucket: String,
     access_key: String,
     secret_key: String,
-    state: tauri::State<'_,DataExplorerState>
-) -> Result<String,()> {
-
+    state: tauri::State<'_, DataExplorerState>,
+) -> Result<String, ()> {
     let s3_bucket = S3Bucket {
         endpoint: endpoint.clone(),
         bucket: bucket.clone(),
@@ -76,10 +75,21 @@ async fn save_s3_empoint_definition(
         secret_key: secret_key.clone(),
     };
 
-    state.s3_endpoints.write().await.insert(endpoint.clone(), s3_bucket);
-
+    state
+        .s3_endpoints
+        .write()
+        .await
+        .insert(endpoint.clone(), s3_bucket);
 
     Ok("endpoint saved".to_string())
+}
+
+#[tauri::command]
+async fn get_s3_endpoints(state: tauri::State<'_, DataExplorerState>) -> Result<String, ()> {
+    let endpoints = state.s3_endpoints.read().await;
+
+    let payload = serde_json::to_string(&Vec::from_iter(endpoints.values())).unwrap();
+    Ok(payload)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,15 +139,20 @@ async fn get_df_data(df: &DataFrame) -> Vec<Map<String, Value>> {
     json_data
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 struct DataExplorerState {
     s3_endpoints: RwLock<HashMap<String, S3Bucket>>,
 }
 
 fn main() {
-  tauri::Builder::default()
-         .manage(DataExplorerState::default())
-        .invoke_handler(tauri::generate_handler![read_parquet, query_parquet,save_s3_empoint_definition])
+    tauri::Builder::default()
+        .manage(DataExplorerState::default())
+        .invoke_handler(tauri::generate_handler![
+            read_parquet,
+            query_parquet,
+            save_s3_endpoint,
+            get_s3_endpoints
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

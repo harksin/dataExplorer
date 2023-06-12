@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 import "./App.css";
-import LocalExplorer from "./local/explore_local_files";
+import LocalExplorer from "./local/local_explorer";
 import ErrorBoundary from "./errors/default_boundary";
 import { Box, CssBaseline, Divider, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from "@mui/material";
 
@@ -220,26 +220,6 @@ function Layout() {
                         </ListItemButton>
                     </ListItem>
                 </List>
-
-
-                {/* <Sidebar >
-            <Menu
-              menuItemStyles={{
-                button: {
-                  // the active class will be added automatically by react router
-                  // so we can use it to style the active menu item
-                  [`&.active`]: {
-                    backgroundColor: '#13395e',
-                    color: '#b6c8d9',
-                  },
-                },
-              }}
-            >
-              <MenuItem component={<Link to="/local" />}> Local</MenuItem>
-              <MenuItem component={<Link to="/dashboard" />}> Calendar</MenuItem>
-              <MenuItem component={<Link to="/nothing-here" />}> E-commerce</MenuItem>
-            </Menu> 
-            </Sidebar> */}
 
             </Drawer>
 
