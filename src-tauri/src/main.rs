@@ -4,6 +4,13 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use dataExplorer::__cmd__get_s3_endpoints;
+use dataExplorer::__cmd__list_s3_files;
+use dataExplorer::__cmd__save_s3_endpoint;
+use dataExplorer::s3::s3_commands::get_s3_endpoints;
+use dataExplorer::s3::s3_commands::list_s3_files;
+use dataExplorer::s3::s3_commands::save_s3_endpoint;
+use dataExplorer::state::data_explorer_state::DataExplorerState;
 use datafusion::error::Result;
 use datafusion::prelude::*;
 use log::info;
@@ -50,46 +57,6 @@ async fn query_parquet(file_name: String, query: String) -> String {
         data: get_df_data(&df).await,
     }
     .into()
-}
-
-#[derive(Debug, Serialize, Default)]
-pub struct S3Bucket {
-    pub endpoint: String,
-    pub bucket: String,
-    pub access_key: String,
-    pub secret_key: String,
-}
-
-#[tauri::command]
-async fn save_s3_endpoint(
-    endpoint: String,
-    bucket: String,
-    access_key: String,
-    secret_key: String,
-    state: tauri::State<'_, DataExplorerState>,
-) -> Result<String, ()> {
-    let s3_bucket = S3Bucket {
-        endpoint: endpoint.clone(),
-        bucket: bucket.clone(),
-        access_key: access_key.clone(),
-        secret_key: secret_key.clone(),
-    };
-
-    state
-        .s3_endpoints
-        .write()
-        .await
-        .insert(endpoint.clone(), s3_bucket);
-
-    Ok("endpoint saved".to_string())
-}
-
-#[tauri::command]
-async fn get_s3_endpoints(state: tauri::State<'_, DataExplorerState>) -> Result<String, ()> {
-    let endpoints = state.s3_endpoints.read().await;
-
-    let payload = serde_json::to_string(&Vec::from_iter(endpoints.values())).unwrap();
-    Ok(payload)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -139,11 +106,6 @@ async fn get_df_data(df: &DataFrame) -> Vec<Map<String, Value>> {
     json_data
 }
 
-#[derive(Debug, Default)]
-struct DataExplorerState {
-    s3_endpoints: RwLock<HashMap<String, S3Bucket>>,
-}
-
 fn main() {
     tauri::Builder::default()
         .manage(DataExplorerState::default())
@@ -151,7 +113,8 @@ fn main() {
             read_parquet,
             query_parquet,
             save_s3_endpoint,
-            get_s3_endpoints
+            get_s3_endpoints,
+            list_s3_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
