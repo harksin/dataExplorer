@@ -10,6 +10,7 @@ services:
       - MINIO_ROOT_PASSWORD=minio123
     volumes:
       - 'minio_data:/data'
+    # network_mode: host
 
 volumes:
   minio_data:

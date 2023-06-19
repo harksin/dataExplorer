@@ -6,25 +6,21 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
 
 import "../App.css";
-
-//todo generate from rust structs
-type DataExplorerDataFrame = {
-  columns: any;
-  data: any;
-}
+import { DataExplorerDataframe } from "../bindings/commands";
 
 function LocalExplorer() {
-  const [dataframe, setDataframe] = useState<DataExplorerDataFrame>({ columns: [], data: [] });
+  const [dataframe, setDataframe] = useState<DataExplorerDataframe>({ columns: [], data: [] });
   const [fileName, setFilename] = useState("");
   const [sqlQuery, setSqlQuery] = useState("");
 
   async function readParquetFile() {
-    let de_df: DataExplorerDataFrame = JSON.parse(await invoke("read_parquet", { fileName: fileName }))
+    let de_df: DataExplorerDataframe = JSON.parse(await invoke("read_parquet", { fileName: fileName }))
+    console.log(de_df)
     setDataframe(de_df)
   }
 
   async function queryParquetFile() {
-    let de_df: DataExplorerDataFrame = JSON.parse(await invoke("query_parquet", { fileName: fileName, query: sqlQuery }))
+    let de_df: DataExplorerDataframe = JSON.parse(await invoke("query_parquet", { fileName: fileName, query: sqlQuery }))
     setDataframe(de_df)
   }
 

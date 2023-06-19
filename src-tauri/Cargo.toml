@@ -1,6 +1,6 @@
 [package]
 name = "dataExplorer"
-version = "0.0.0"
+version = "0.0.2"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -21,6 +21,7 @@ log = "0.4.17"
 env_logger = "0.10.0"
 aws-sdk-s3 = "0.28.0"
 aws-config= "0.55.3"
+typeshare = "1.0.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

@@ -7,17 +7,10 @@ import { open } from "@tauri-apps/api/dialog";
 
 import "../App.css";
 import { TextField } from "@mui/material";
-
-//todo generate from rust structs
-type S3Endpoints = {
-    endpoint: String,
-    bucket: String,
-    access_key: String,
-    secret_key: String,
-}
+import { S3Bucket } from "../bindings/commands";
 
 function S3Explorer() {
-    const [s3Endpoints, setS3Endpoints] = useState<S3Endpoints[]>([]);
+    const [s3Endpoints, setS3Endpoints] = useState<S3Bucket[]>([]);
 
 
     useEffect(() => {
@@ -25,7 +18,7 @@ function S3Explorer() {
       }, []);
 
 
-    async function save_s3_empoint(endpointToSave: S3Endpoints) {
+    async function save_s3_empoint(endpointToSave: S3Bucket) {
         let result = await invoke("save_s3_endpoint", {
             endpoint: endpointToSave.endpoint,
             bucket: endpointToSave.bucket,
@@ -38,11 +31,11 @@ function S3Explorer() {
     }
 
     async function getS3Endpoints() {
-        let s3_endpoints: S3Endpoints[] = JSON.parse(await invoke("get_s3_endpoints"))
+        let s3_endpoints: S3Bucket[] = JSON.parse(await invoke("get_s3_endpoints"))
         setS3Endpoints(s3_endpoints)
     }
 
-    const columns = useMemo<MRT_ColumnDef<S3Endpoints>[]>(
+    const columns = useMemo<MRT_ColumnDef<S3Bucket>[]>(
         () => [
             {
                 accessorKey: 'endpoint',

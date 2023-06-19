@@ -7,6 +7,8 @@ use std::hash::Hash;
 use dataExplorer::__cmd__get_s3_endpoints;
 use dataExplorer::__cmd__list_s3_files;
 use dataExplorer::__cmd__save_s3_endpoint;
+use dataExplorer::dataframe::dto::DataExplorerDataframe;
+use dataExplorer::dataframe::dto::MuiTableColumns;
 use dataExplorer::s3::s3_commands::get_s3_endpoints;
 use dataExplorer::s3::s3_commands::list_s3_files;
 use dataExplorer::s3::s3_commands::save_s3_endpoint;
@@ -57,33 +59,6 @@ async fn query_parquet(file_name: String, query: String) -> String {
         data: get_df_data(&df).await,
     }
     .into()
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct DataExplorerDataframe {
-    columns: Vec<MuiTableColumns>,
-    data: Vec<Map<String, Value>>,
-}
-
-impl From<DataExplorerDataframe> for String {
-    fn from(df: DataExplorerDataframe) -> Self {
-        serde_json::to_string(&df).unwrap()
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct MuiTableColumns {
-    accessorKey: String,
-    header: String,
-}
-
-impl From<&String> for MuiTableColumns {
-    fn from(s: &String) -> Self {
-        MuiTableColumns {
-            accessorKey: s.to_string(),
-            header: s.to_string(),
-        }
-    }
 }
 
 fn get_df_schema(df: &DataFrame) -> Vec<MuiTableColumns> {
