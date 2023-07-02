@@ -8,8 +8,10 @@ import { open } from "@tauri-apps/api/dialog";
 import "../App.css";
 import { TextField } from "@mui/material";
 import { S3Bucket } from "../bindings/commands";
+import { useNavigate } from "react-router-dom";
 
-function S3Explorer() {
+function S3Enpoints() {
+    let navigate = useNavigate();
     const [s3Endpoints, setS3Endpoints] = useState<S3Bucket[]>([]);
 
 
@@ -111,10 +113,20 @@ function S3Explorer() {
                         <button type="submit">Create new endpoint</button>
                     </form>
                 </div>
-                <MaterialReactTable columns={columns} data={s3Endpoints} />
+                <MaterialReactTable columns={columns} data={s3Endpoints}
+                muiTableBodyRowProps={({ row }) => ({
+                    onClick: (_) => {
+                      console.info(row.original);
+                      navigate("/s3-files-explorer")
+                    },
+                    sx: {
+                      cursor: 'pointer', //you might want to change the cursor too when adding an onClick
+                    },
+                  })}
+                />
             </div>
         </div>
     );
 }
 
-export default S3Explorer;
+export default S3Enpoints;

@@ -19,7 +19,8 @@ serde_json = "1.0"
 datafusion = "24.0.0"
 log = "0.4.17"
 env_logger = "0.10.0"
-aws-sdk-s3 = "0.28.0"
+aws-credential-types = { version = "0.55.3", features = ["hardcoded-credentials"] }
+aws-sdk-s3 =  "0.28.0" 
 aws-config= "0.55.3"
 typeshare = "1.0.0"
 

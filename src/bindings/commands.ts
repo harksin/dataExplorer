@@ -19,3 +19,7 @@ export interface S3Bucket {
 	secret_key: string;
 }
 
+export interface S3File {
+	key: string;
+}
+

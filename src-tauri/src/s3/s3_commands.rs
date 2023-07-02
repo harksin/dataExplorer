@@ -1,19 +1,39 @@
 use aws_config::{endpoint::Endpoint, meta::region::RegionProviderChain};
-use aws_sdk_s3::{config::Region, meta::PKG_VERSION, Client, Error};
+use aws_sdk_s3::{
+    config::{Credentials, Region},
+    meta::PKG_VERSION,
+    Client, Error,
+};
+use log::{debug, info};
+use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 
 use crate::state::data_explorer_state::DataExplorerState;
 
 use super::domain::S3Bucket;
 
+#[derive(Debug, Serialize, Deserialize)]
+#[typeshare]
+struct S3File {
+    key: String,
+}
+
 #[tauri::command]
 pub async fn list_s3_files(
-    bucket_id: String,
+    endpoint: String,
     state: tauri::State<'_, DataExplorerState>,
 ) -> Result<String, ()> {
-    let s3_endpoint: Option<String> = Some("http://127.0.0.1:3001".to_owned());
+    debug!("list s3 files");
+
+    let s3_endpoint: Option<String> = Some("http://127.0.0.1:9000".to_owned());
 
     let region_provider = RegionProviderChain::default_provider().or_else(Region::new("us-east-1"));
-    let shared_config = aws_config::from_env().region(region_provider).load().await;
+    let creds = Credentials::from_keys("minio", "minio123", None);
+    let shared_config = aws_config::from_env()
+        .region(region_provider)
+        .credentials_provider(creds)
+        .load()
+        .await;
 
     let s3_config = if let Some(endpoint_url) = s3_endpoint {
         aws_sdk_s3::config::Builder::from(&shared_config)
@@ -25,19 +45,23 @@ pub async fn list_s3_files(
 
     let s3_client = Client::from_conf(s3_config);
 
-    let mut files: Vec<String> = vec![];
+    let mut files: Vec<S3File> = vec![];
 
     let mut result = s3_client
         .list_objects_v2()
         // .bucket(s3_bucket.bucket.clone())
-        .bucket("test_bucket")
+        .bucket("test-bucket")
         .send()
         .await
         .unwrap();
 
     for content in result.contents.unwrap_or_default() {
-        files.push(content.key.clone().unwrap());
+        files.push(S3File {
+            key: content.key.clone().unwrap(),
+        });
     }
+
+    debug!("{}", serde_json::to_string(&files).unwrap());
 
     Ok(serde_json::to_string(&files).unwrap())
 }
