@@ -38,10 +38,20 @@ pub async fn list_s3_files(
 ) -> Result<String, ()> {
     debug!("list s3 files");
 
-    let s3_endpoint: Option<String> = Some("http://127.0.0.1:9000".to_owned());
+    let rlock = state.s3_endpoints.read().await;
+
+    //get bucket definition from endpoint lock
+    let bucket = rlock.get(&endpoint).unwrap();
+
+    //test data : http://127.0.0.1:9000
+    //todo use nutype ?
+    let s3_endpoint: Option<String> = match bucket.endpoint.is_empty() {
+        true => None,
+        false => Some(bucket.endpoint.clone()),
+    };
 
     let region_provider = RegionProviderChain::default_provider().or_else(Region::new("us-east-1"));
-    let creds = Credentials::from_keys("minio", "minio123", None);
+    let creds = Credentials::from_keys(bucket.access_key.clone(), bucket.secret_key.clone(), None);
     let shared_config = aws_config::from_env()
         .region(region_provider)
         .credentials_provider(creds)
@@ -112,38 +122,44 @@ pub async fn get_s3_endpoints(state: tauri::State<'_, DataExplorerState>) -> Res
 }
 
 #[tauri::command]
-pub async fn read_s3_parquet(url: String) -> String {
-    info!("Reading parquet file from s3: {}", url);
+pub async fn read_s3_parquet(
+    endpoint: String,
+    file: String,
+    state: tauri::State<'_, DataExplorerState>,
+) -> Result<String, ()> {
+    let rlock = state.s3_endpoints.read().await;
+    let bucket = rlock.get(&endpoint).unwrap();
+
+    info!("Reading parquet file from s3: {:?}", bucket);
 
     let ctx = SessionContext::new();
 
     let s3 = AmazonS3Builder::new()
         .with_allow_http(true)
-        .with_endpoint("http://127.0.0.1:9000")
-        .with_bucket_name("test-bucket")
-        .with_region("us-east-1")
-        .with_access_key_id("minio")
-        .with_secret_access_key("minio123")
+        .with_endpoint(bucket.endpoint.clone())
+        .with_bucket_name(bucket.bucket.clone())
+        .with_region("us-east-1") //todo remove hardcoded region
+        .with_access_key_id(bucket.access_key.clone())
+        .with_secret_access_key(bucket.secret_key.clone())
         .build()
         .unwrap();
 
-    let path = format!("http://127.0.0.1:9000/");
-    let s3_url = Url::parse(&path).unwrap();
+    let s3_url = Url::parse(&bucket.endpoint).unwrap();
     ctx.runtime_env()
         .register_object_store(&s3_url, Arc::new(s3));
 
     // register parquet file with the execution context
     let df = ctx
         .read_parquet(
-            "http://127.0.0.1:9000/test.snappy.parquet",
+            format!("{}/{}", bucket.endpoint, file),
             ParquetReadOptions::default(),
         )
         .await
         .unwrap();
 
-    DataExplorerDataframe {
+    Ok(DataExplorerDataframe {
         columns: get_df_schema(&df),
         data: get_df_data(&df).await,
     }
-    .into()
+    .into())
 }

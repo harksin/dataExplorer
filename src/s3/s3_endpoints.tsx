@@ -17,7 +17,7 @@ function S3Enpoints() {
 
     useEffect(() => {
         getS3Endpoints();
-      }, []);
+    }, []);
 
 
     async function save_s3_empoint(endpointToSave: S3Bucket) {
@@ -114,15 +114,15 @@ function S3Enpoints() {
                     </form>
                 </div>
                 <MaterialReactTable columns={columns} data={s3Endpoints}
-                muiTableBodyRowProps={({ row }) => ({
-                    onClick: (_) => {
-                      console.info(row.original);
-                      navigate("/s3-files-explorer",{ state: { s3_emdpoint_name: row.original.endpoint }})
-                    },
-                    sx: {
-                      cursor: 'pointer', //you might want to change the cursor too when adding an onClick
-                    },
-                  })}
+                    muiTableBodyRowProps={({ row }) => ({
+                        onClick: (_) => {
+                            console.info(row.original);
+                            navigate("/s3-files-explorer", { state: { s3_endpoint_name: row.original.endpoint } })
+                        },
+                        sx: {
+                            cursor: 'pointer', //you might want to change the cursor too when adding an onClick
+                        },
+                    })}
                 />
             </div>
         </div>
