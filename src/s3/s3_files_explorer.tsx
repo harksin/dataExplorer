@@ -28,7 +28,7 @@ function S3FilesExplorer() {
 
 
     async function listS3Files(endpoint:string) {
-        let files: S3File[] = JSON.parse(await invoke("list_s3_files", { endpoint: endpoint }))
+        let files: S3File[] = JSON.parse(await invoke("list_s3_files", { endpoint }))
         console.log(files)
         setFiles(files)
       }
@@ -51,8 +51,7 @@ function S3FilesExplorer() {
                 muiTableBodyRowProps={({ row }) => ({
                     onClick: (_) => {
                       console.info(row.original);
-                    //   navigate("/s3-files-explorer")
-                      navigate("/s3-files-explorer")
+                      navigate("/s3-explorer")
                     },
                     sx: {
                       cursor: 'pointer', //you might want to change the cursor too when adding an onClick

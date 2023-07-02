@@ -6,11 +6,15 @@ use std::hash::Hash;
 
 use dataExplorer::__cmd__get_s3_endpoints;
 use dataExplorer::__cmd__list_s3_files;
+use dataExplorer::__cmd__read_s3_parquet;
 use dataExplorer::__cmd__save_s3_endpoint;
 use dataExplorer::dataframe::dto::DataExplorerDataframe;
 use dataExplorer::dataframe::dto::MuiTableColumns;
+use dataExplorer::dataframe::get_df_data;
+use dataExplorer::dataframe::get_df_schema;
 use dataExplorer::s3::s3_commands::get_s3_endpoints;
 use dataExplorer::s3::s3_commands::list_s3_files;
+use dataExplorer::s3::s3_commands::read_s3_parquet;
 use dataExplorer::s3::s3_commands::save_s3_endpoint;
 use dataExplorer::state::data_explorer_state::DataExplorerState;
 use datafusion::error::Result;
@@ -61,26 +65,6 @@ async fn query_parquet(file_name: String, query: String) -> String {
     .into()
 }
 
-fn get_df_schema(df: &DataFrame) -> Vec<MuiTableColumns> {
-    let schema = df
-        .schema()
-        .fields()
-        .iter()
-        .map(|f| MuiTableColumns::from(f.name()))
-        .collect::<Vec<_>>();
-
-    schema
-}
-
-async fn get_df_data(df: &DataFrame) -> Vec<Map<String, Value>> {
-    let batches = df.clone().collect().await.unwrap();
-
-    let json_data =
-        datafusion::arrow::json::writer::record_batches_to_json_rows(&batches[..]).unwrap();
-
-    json_data
-}
-
 fn main() {
     tauri::Builder::default()
         .manage(DataExplorerState::default())
@@ -90,6 +74,7 @@ fn main() {
             save_s3_endpoint,
             get_s3_endpoints,
             list_s3_files,
+            read_s3_parquet
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

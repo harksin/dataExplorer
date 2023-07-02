@@ -32,6 +32,7 @@ import { Box, CssBaseline, Divider, IconButton, List, ListItem, ListItemButton, 
 import Layout from "./Layout";
 import S3Enpoints from "./s3/s3_endpoints";
 import S3FilesExplorer from "./s3/s3_files_explorer";
+import S3Explorer from "./s3/s3_explorer";
 
 
 
@@ -45,6 +46,7 @@ function App() {
         <Route path="local" element={<LocalExplorer />} />
         <Route path="s3-endpoints" element={<S3Enpoints/>} />
         <Route path="s3-files-explorer" element={<S3FilesExplorer/>} />
+        <Route path="s3-explorer" element={<S3Explorer/>} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NoMatch />} />
       </Route>

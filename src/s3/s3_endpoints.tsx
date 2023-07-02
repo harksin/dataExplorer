@@ -117,7 +117,7 @@ function S3Enpoints() {
                 muiTableBodyRowProps={({ row }) => ({
                     onClick: (_) => {
                       console.info(row.original);
-                      navigate("/s3-files-explorer")
+                      navigate("/s3-files-explorer",{ state: { s3_emdpoint_name: row.original.endpoint }})
                     },
                     sx: {
                       cursor: 'pointer', //you might want to change the cursor too when adding an onClick

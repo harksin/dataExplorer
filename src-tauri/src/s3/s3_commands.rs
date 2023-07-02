@@ -1,14 +1,27 @@
+use std::sync::Arc;
+
 use aws_config::{endpoint::Endpoint, meta::region::RegionProviderChain};
 use aws_sdk_s3::{
     config::{Credentials, Region},
     meta::PKG_VERSION,
     Client, Error,
 };
+use datafusion::{
+    datasource::listing::ListingTableConfig,
+    prelude::{ParquetReadOptions, SessionContext},
+};
+
+use object_store::aws::AmazonS3Builder;
+
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
+use url::Url;
 
-use crate::state::data_explorer_state::DataExplorerState;
+use crate::{
+    dataframe::{dto::DataExplorerDataframe, get_df_data, get_df_schema},
+    state::data_explorer_state::DataExplorerState,
+};
 
 use super::domain::S3Bucket;
 
@@ -96,4 +109,41 @@ pub async fn get_s3_endpoints(state: tauri::State<'_, DataExplorerState>) -> Res
 
     let payload = serde_json::to_string(&Vec::from_iter(endpoints.values())).unwrap();
     Ok(payload)
+}
+
+#[tauri::command]
+pub async fn read_s3_parquet(url: String) -> String {
+    info!("Reading parquet file from s3: {}", url);
+
+    let ctx = SessionContext::new();
+
+    let s3 = AmazonS3Builder::new()
+        .with_allow_http(true)
+        .with_endpoint("http://127.0.0.1:9000")
+        .with_bucket_name("test-bucket")
+        .with_region("us-east-1")
+        .with_access_key_id("minio")
+        .with_secret_access_key("minio123")
+        .build()
+        .unwrap();
+
+    let path = format!("http://127.0.0.1:9000/");
+    let s3_url = Url::parse(&path).unwrap();
+    ctx.runtime_env()
+        .register_object_store(&s3_url, Arc::new(s3));
+
+    // register parquet file with the execution context
+    let df = ctx
+        .read_parquet(
+            "http://127.0.0.1:9000/test.snappy.parquet",
+            ParquetReadOptions::default(),
+        )
+        .await
+        .unwrap();
+
+    DataExplorerDataframe {
+        columns: get_df_schema(&df),
+        data: get_df_data(&df).await,
+    }
+    .into()
 }
